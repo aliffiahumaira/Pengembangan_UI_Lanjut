@@ -1,4 +1,5 @@
-<script setup lang="ts">
+<script setup>
+import { RouterView } from 'vue-router'
 import Navbar from '@/components/app/Navbar.vue'
 import Breadcrumb from '@/components/app/Breadcrumb.vue'
 </script>
@@ -6,24 +7,18 @@ import Breadcrumb from '@/components/app/Breadcrumb.vue'
 <template>
   <div class="app-layout">
     <Navbar />
+    <Breadcrumb />
     <main class="main-content">
-      <Breadcrumb />
-      <router-view />
+      <!-- Tag ini WAJIB ada agar rute seperti Home, About, dan Browse bisa muncul -->
+      <RouterView />
     </main>
   </div>
 </template>
 
 <style scoped>
-.app-layout {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
 .main-content {
-  flex: 1;
-  padding: 2rem;
   max-width: 1440px;
   margin: 0 auto;
-  width: 100%;
+  padding: 2rem;
 }
 </style>
