@@ -52,6 +52,18 @@ const routes = [
         meta: { breadcrumb: 'Contact' }
       }
     ]
+  },
+  // TAMBAHKAN RUTE DASHBOARD DI BAWAH INI
+  {
+    path: '/dashboard',
+    component: () => import('@/layouts/DashboardLayout.vue'),
+    children: [
+      {
+        path: '',
+        name: 'dashboard-overview',
+        component: () => import('@/views/Dashboard.vue')
+      }
+    ]
   }
 ]
 
