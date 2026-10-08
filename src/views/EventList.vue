@@ -1,47 +1,141 @@
+<script setup>
+import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
+
+import EventCard from '@/components/event/EventCard.vue';
+import SearchBar from '@/components/event/SearchBar.vue';
+import CategoryFilter from '@/components/event/CategoryFilter.vue';
+
+const router = useRouter();
+
+const events = [
+  {
+    id: 1,
+    title: 'Vue.js Mastery Workshop',
+    date: 'Oct 12, 2026',
+    loc: 'Tech Hub, Jakarta',
+    cat: 'Workshop',
+    desc: 'Learn advanced Vue 3 concepts, Composition API, and state management to build high-performance web applications interactively.'
+  },
+  {
+    id: 2,
+    title: 'National Tech Meetup',
+    date: 'Oct 15, 2026',
+    loc: 'Main Auditorium, City Center',
+    cat: 'Meetup',
+    desc: 'A gathering of hundreds of developers and tech enthusiasts to share the latest industry trends and expand professional networks.'
+  },
+  {
+    id: 3,
+    title: 'Startup Pitch Competition',
+    date: 'Nov 02, 2026',
+    loc: 'Innovation Center',
+    cat: 'Competition',
+    desc: 'Watch the best local startup founders pitch their innovative ideas live in front of a panel of renowned investors.'
+  },
+  {
+    id: 4,
+    title: 'UI/UX Design Sprint',
+    date: 'Nov 10, 2026',
+    loc: 'Creative Studio',
+    cat: 'Workshop',
+    desc: 'A hands-on session on designing user interfaces by implementing layout systems and visual hierarchy principles.'
+  },
+  {
+    id: 5,
+    title: 'Digital Marketing Seminar',
+    date: 'Nov 20, 2026',
+    loc: 'Grand Hotel Hall',
+    cat: 'Seminar',
+    desc: 'An in-depth seminar dissecting modern digital marketing strategies, from SEO optimization to user conversion tactics.'
+  },
+  {
+    id: 6,
+    title: "Community Leader's Summit",
+    date: 'Dec 05, 2026',
+    loc: 'Gatherly HQ',
+    cat: 'Conference',
+    desc: 'An exclusive year-end conference for community leaders to formulate sustainable ecosystem development strategies.'
+  }
+];
+
+const searchQuery = ref('');
+const selectedCategory = ref('All');
+const categories = ['All', 'Workshop', 'Meetup', 'Competition', 'Seminar', 'Conference'];
+
+const filteredEvents = computed(() => {
+  return events.filter((event) => {
+    const matchSearch =
+      event.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      event.loc.toLowerCase().includes(searchQuery.value.toLowerCase());
+    const matchCat =
+      selectedCategory.value === 'All' || event.cat === selectedCategory.value;
+    return matchSearch && matchCat;
+  });
+});
+
+const handleViewDetail = (id) => {
+  router.push(`/browse/events/${id}`);
+};
+</script>
+
 <template>
   <div class="event-list-page">
     <div class="header-section">
       <h2 class="section-title">Upcoming Events</h2>
-      <p class="section-desc">Discover the latest gatherings and activities happening near you.</p>
+      <p class="section-desc">Discover workshops, seminars, tech meetups, and competitions near you.</p>
     </div>
-    <div class="event-grid">
-      <div class="event-card" v-for="i in 6" :key="i">
-        <div class="event-body">
-          <div class="event-meta">
-            <span class="event-date">Oct {{ 10 + i }} 2026</span>
-            <span class="event-category">Community</span>
-          </div>
-          <h3>Community Gathering {{ i }}</h3>
-          <p class="event-loc">📍 Main Auditorium, City Center</p>
-          <p class="event-desc">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam at velit vel magna
-            interdum scelerisque.
-          </p>
-          <div class="card-footer">
-            <router-link :to="`/browse/events/${i}`" class="btn-link">View Details &rarr;</router-link>
-          </div>
-        </div>
-      </div>
+
+    <div class="filters-section">
+      <SearchBar v-model="searchQuery" />
+      <CategoryFilter :categories="categories" v-model="selectedCategory" />
+    </div>
+
+    <div class="event-grid" v-if="filteredEvents.length">
+      <EventCard
+        v-for="event in filteredEvents"
+        :key="event.id"
+        :event="event"
+        @view-detail="handleViewDetail"
+      />
+    </div>
+
+    <div v-else class="empty-state">
+      <p>No events found matching your criteria.</p>
     </div>
   </div>
 </template>
 
 <style scoped>
-.header-section { margin-bottom: 3rem; }
-.section-title { font-size: 2.2rem; color: #1c1948; margin-bottom: 0.5rem; }
-.section-desc { color: #666; font-size: 1.1rem; }
+.header-section {
+  margin-bottom: var(--space-8);
+}
 
-.event-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 2rem; }
-.event-card { background: white; border-radius: 16px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02); border: 1px solid #f0f0f0; transition: transform 0.3s ease, border-color 0.3s ease; display: flex; flex-direction: column; }
-.event-card:hover { transform: translateY(-5px); border-color: #ddd; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05); }
-.event-body { padding: 2rem; display: flex; flex-direction: column; height: 100%; }
-.event-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
-.event-date { background: rgba(102, 68, 255, 0.1); color: #6644ff; padding: 0.4rem 0.8rem; border-radius: 6px; font-weight: 600; font-size: 0.85rem; }
-.event-category { color: #888; font-size: 0.85rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
-.event-body h3 { color: #1c1948; margin-bottom: 0.8rem; font-size: 1.4rem; }
-.event-loc { color: #666; font-size: 0.95rem; margin-bottom: 1.5rem; }
-.event-desc { color: #555; line-height: 1.6; font-size: 0.95rem; margin-bottom: 2rem; flex-grow: 1; }
-.card-footer { border-top: 1px solid #fefefe; padding-top: 1.5rem; }
-.btn-link { display: inline-block; color: #1c1948; font-weight: 600; text-decoration: none; transition: color 0.2s; }
-.btn-link:hover { color: #6644ff; }
+.section-title {
+  font-size: 2.2rem;
+  margin-bottom: var(--space-2);
+}
+
+.section-desc {
+  color: var(--text-muted);
+  font-size: 1.1rem;
+}
+
+.filters-section {
+  margin-bottom: var(--space-6);
+}
+
+.event-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--space-6);
+}
+
+.empty-state {
+  text-align: center;
+  padding: var(--space-12);
+  color: var(--text-muted);
+  background: var(--bg-light);
+  border-radius: var(--space-4);
+}
 </style>
