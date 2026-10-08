@@ -1,23 +1,63 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
+import AppLayout from '@/layouts/App.vue'
+
+const routes = [
+  {
+    path: '/',
+    component: AppLayout,
+    children: [
+      {
+        path: '',
+        name: 'home',
+        component: () => import('@/views/Home.vue'),
+        meta: { breadcrumb: 'Home' }
+      },
+      {
+        path: 'about',
+        name: 'about',
+        component: () => import('@/views/About.vue'),
+        meta: { breadcrumb: 'About' }
+      },
+      {
+        path: 'browse',
+        name: 'browse',
+        component: () => import('@/views/Browse.vue'),
+        meta: { breadcrumb: 'Browse' },
+        redirect: '/browse/events',
+        children: [
+          {
+            path: 'events',
+            name: 'events',
+            component: () => import('@/views/EventList.vue'),
+            meta: { breadcrumb: 'Event List' }
+          },
+          {
+            path: 'events/:id',
+            name: 'event-detail',
+            component: () => import('@/views/EventDetail.vue'),
+            meta: { breadcrumb: 'Event Detail' }
+          },
+          {
+            path: 'category',
+            name: 'category',
+            component: () => import('@/views/Category.vue'),
+            meta: { breadcrumb: 'Category' }
+          }
+        ]
+      },
+      {
+        path: 'contact',
+        name: 'contact',
+        component: () => import('@/views/Contact.vue'),
+        meta: { breadcrumb: 'Contact' }
+      }
+    ]
+  }
+]
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes: [
-    {
-      path: '/',
-      name: 'home',
-      component: HomeView,
-    },
-    {
-      path: '/about',
-      name: 'about',
-      // route level code-splitting
-      // this generates a separate chunk (About.[hash].js) for this route
-      // which is lazy-loaded when the route is visited.
-      component: () => import('../views/AboutView.vue'),
-    },
-  ],
+  routes
 })
 
 export default router
