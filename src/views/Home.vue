@@ -63,6 +63,7 @@ import AppCard from '@/components/ui/AppCard.vue';
 
 .hero-content {
   max-width: 800px;
+  /* Z-PATTERN: Center aligned cascading elements */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -112,6 +113,7 @@ import AppCard from '@/components/ui/AppCard.vue';
 .feature-card {
   padding: var(--space-8);
   text-align: center;
+  margin-bottom: var(--space-8);
 }
 
 .feature-icon {

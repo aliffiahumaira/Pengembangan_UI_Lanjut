@@ -41,7 +41,9 @@ import AppCard from '@/components/ui/AppCard.vue';
         </ul>
       </div>
 
+      <!-- FOCAL POINT & STICKY PANE -->
       <div class="sidebar">
+<<<<<<< HEAD
         <AppCard class="ticket-card sticky-pane">
           <h3>Attendee Registration</h3>
           <p class="price">Free</p>
@@ -51,6 +53,16 @@ import AppCard from '@/components/ui/AppCard.vue';
           </AppButton>
           <p class="spots">Only 12 seats left!</p>
         </AppCard>
+=======
+        <div class="ticket-card sticky-pane">
+          <h3>Attendee Registration</h3>
+          <p class="price">Free</p>
+          <p class="ticket-desc">Secure your seat now before the quota is full.</p>
+          <!-- STRONGEST FOCAL POINT -->
+          <button class="btn-register">Register Now</button>
+          <p class="spots">Only 12 seats left!</p>
+        </div>
+>>>>>>> origin/main
       </div>
     </div>
   </div>
