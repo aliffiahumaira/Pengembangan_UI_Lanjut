@@ -7,9 +7,21 @@ import AppCard from '@/components/ui/AppCard.vue'
 
 const route = useRoute()
 const router = useRouter()
-const { getEventById } = useEvents()
+const { getEventById, isUserRegistered } = useEvents()
 
 const event = computed(() => getEventById(route.params.id))
+
+// MEMERIKSA APAKAH USER SUDAH TERDAFTAR DI EVENT INI
+const isRegistered = computed(() => {
+  return event.value ? isUserRegistered(event.value.id) : false
+})
+
+// NAVIGASI KE HALAMAN FORMULIR PENDAFTARAN (MODUL 5)
+const handleRegisterClick = () => {
+  if (event.value) {
+    router.push(`/browse/events/${event.value.id}/register`)
+  }
+}
 </script>
 
 <template>
@@ -22,9 +34,14 @@ const event = computed(() => getEventById(route.params.id))
       <div class="detail-header">
         <div class="header-tags">
           <span class="event-tag">{{ event.cat }}</span>
-          <span v-if="event.done" class="status-tag status-ended">Event Finished</span>
+          
+          <!-- HIARARKI BADGE STATUS EVENT / REGISTRASI -->
+          <span v-if="isRegistered" class="status-tag status-registered">Already Registered</span>
+          <span v-else-if="event.done" class="status-tag status-ended">Event Finished</span>
+          <span v-else-if="event.quota <= 0" class="status-tag status-soldout">Sold Out</span>
           <span v-else class="status-tag status-live">Open Registration</span>
         </div>
+
         <h1>{{ event.title }}</h1>
         <div class="meta-info">
           <span class="meta-item">📅 {{ event.date }}</span>
@@ -43,20 +60,35 @@ const event = computed(() => getEventById(route.params.id))
           <AppCard class="ticket-card sticky-pane">
             <h3>Attendee Registration</h3>
             <p class="price">{{ event.price }}</p>
+            
             <p class="ticket-desc">
-              {{ event.done ? 'Registration is closed as this event has ended.' : 'Secure your ticket now before quota is filled.' }}
+              <template v-if="isRegistered">
+                You have secured a ticket for this event. Click below to view your receipt pass.
+              </template>
+              <template v-else-if="event.done">
+                Registration is closed as this event has ended.
+              </template>
+              <template v-else-if="event.quota <= 0">
+                All available seats for this event have been fully booked.
+              </template>
+              <template v-else>
+                Secure your ticket now before quota is filled.
+              </template>
             </p>
 
+            <!-- 1. KONDISI SUDAH TERDAFTAR -->
             <AppButton
-              v-if="!event.done"
+              v-if="isRegistered"
               variant="primary"
-              class="btn-register"
-              @click="alert('Ticket registered successfully! Your digital QR ticket has been sent to your email.')"
+              class="btn-register btn-registered"
+              @click="router.push('/browse/your-events/' + event.id)"
             >
-              Register Now
+              ✔ View Your Ticket
             </AppButton>
+
+            <!-- 2. KONDISI EVENT SELESAI -->
             <AppButton
-              v-else
+              v-else-if="event.done"
               variant="secondary"
               class="btn-register btn-disabled"
               disabled
@@ -64,7 +96,29 @@ const event = computed(() => getEventById(route.params.id))
               Registration Closed
             </AppButton>
 
-            <p v-if="!event.done" class="spots">Only {{ event.quota }} seats available!</p>
+            <!-- 3. KONDISI KUOTA HABIS -->
+            <AppButton
+              v-else-if="event.quota <= 0"
+              variant="secondary"
+              class="btn-register btn-disabled"
+              disabled
+            >
+              Sold Out
+            </AppButton>
+
+            <!-- 4. KONDISI BISA MENDAFTAR -->
+            <AppButton
+              v-else
+              variant="primary"
+              class="btn-register"
+              @click="handleRegisterClick"
+            >
+              Register Now &rarr;
+            </AppButton>
+
+            <p v-if="!event.done && !isRegistered && event.quota > 0" class="spots">
+              Only {{ event.quota }} seats available!
+            </p>
           </AppCard>
         </div>
       </div>
@@ -89,6 +143,7 @@ const event = computed(() => getEventById(route.params.id))
   margin-bottom: var(--space-6);
   color: var(--text-muted);
   font-weight: 500;
+  transition: color 0.2s;
 }
 .btn-back:hover { color: var(--primary); }
 
@@ -105,6 +160,7 @@ const event = computed(() => getEventById(route.params.id))
   gap: var(--space-3);
   align-items: center;
   margin-bottom: var(--space-4);
+  flex-wrap: wrap;
 }
 
 .event-tag {
@@ -127,6 +183,16 @@ const event = computed(() => getEventById(route.params.id))
 .status-live {
   background: rgba(46, 204, 113, 0.15);
   color: #27ae60;
+}
+
+.status-registered {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.status-soldout {
+  background: #fee2e2;
+  color: #dc2626;
 }
 
 .status-ended {
@@ -178,6 +244,10 @@ const event = computed(() => getEventById(route.params.id))
 .ticket-desc { color: var(--text-muted); margin-bottom: var(--space-6); line-height: 1.5; }
 
 .btn-register { width: 100%; }
+.btn-registered {
+  background: #15803d !important;
+  color: white !important;
+}
 .btn-disabled { cursor: not-allowed; opacity: 0.6; }
 .spots { margin-top: var(--space-4); color: #27ae60; font-weight: 600; font-size: 0.95rem; }
 

@@ -1,38 +1,70 @@
 <script setup>
 defineProps({
-  isOpen: { type: Boolean, default: false },
-  title: { type: String, default: 'Action Confirmation' },
-  message: { type: String, default: 'Are you sure you want to proceed with this action?' },
-  confirmText: { type: String, default: 'Yes, Proceed' },
-  cancelText: { type: String, default: 'Cancel' }
+  isOpen: {
+    type: Boolean,
+    default: false
+  },
+  title: {
+    type: String,
+    default: 'Action Confirmation'
+  },
+  message: {
+    type: String,
+    default: 'Are you sure you want to proceed with this action?'
+  },
+  badgeText: {
+    type: String,
+    default: ''
+  },
+  variant: {
+    type: String,
+    default: 'primary' // Opsi: 'primary', 'danger', 'success'
+  },
+  confirmText: {
+    type: String,
+    default: 'Yes, Proceed'
+  },
+  cancelText: {
+    type: String,
+    default: 'Cancel'
+  }
 })
 
 defineEmits(['confirm', 'close'])
 </script>
 
 <template>
-  <Transition name="modal-fade">
-    <div v-if="isOpen" class="modal-overlay" @click.self="$emit('close')">
-      <div class="modal-card">
-        <div class="modal-header">
-          <div class="modal-icon">⚠️</div>
-          <h3 class="modal-title">{{ title }}</h3>
-        </div>
-        <div class="modal-body">
-          <p class="modal-message">{{ message }}</p>
-          <slot />
-        </div>
-        <div class="modal-footer">
-          <button class="btn-cancel" @click="$emit('close')">
-            {{ cancelText }}
-          </button>
-          <button class="btn-confirm" @click="$emit('confirm')">
-            {{ confirmText }}
-          </button>
+  <Teleport to="body">
+    <Transition name="modal-fade">
+      <div v-if="isOpen" class="modal-overlay" @click.self="$emit('close')">
+        <div class="modal-card">
+          <header class="modal-header">
+            <span v-if="badgeText" :class="['modal-badge', `badge-${variant}`]">
+              {{ badgeText }}
+            </span>
+            <h3 class="modal-title">{{ title }}</h3>
+          </header>
+
+          <div class="modal-body">
+            <slot>
+              <p class="modal-message">{{ message }}</p>
+            </slot>
+          </div>
+
+          <footer class="modal-footer">
+            <slot name="footer">
+              <button class="btn-cancel" @click="$emit('close')">
+                {{ cancelText }}
+              </button>
+              <button :class="['btn-confirm', `btn-${variant}`]" @click="$emit('confirm')">
+                {{ confirmText }}
+              </button>
+            </slot>
+          </footer>
         </div>
       </div>
-    </div>
-  </Transition>
+    </Transition>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -44,6 +76,7 @@ defineEmits(['confirm', 'close'])
   height: 100vh;
   background-color: rgba(15, 23, 42, 0.45);
   backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -54,7 +87,7 @@ defineEmits(['confirm', 'close'])
 .modal-card {
   background: white;
   width: 100%;
-  max-width: 460px;
+  max-width: 480px;
   border-radius: var(--space-4);
   padding: var(--space-6);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
@@ -74,19 +107,36 @@ defineEmits(['confirm', 'close'])
 }
 
 .modal-header {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
   margin-bottom: var(--space-3);
 }
 
-.modal-icon {
-  font-size: 1.8rem;
-  line-height: 1;
+.modal-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 3px 8px;
+  border-radius: 4px;
+  margin-bottom: var(--space-2);
+}
+
+.badge-primary {
+  background: rgba(102, 68, 255, 0.1);
+  color: var(--primary);
+}
+
+.badge-danger {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.badge-success {
+  background: #dcfce7;
+  color: #15803d;
 }
 
 .modal-title {
-  font-size: 1.25rem;
+  font-size: 1.3rem;
   font-weight: 700;
   color: var(--text-main);
   margin: 0;
@@ -127,7 +177,6 @@ defineEmits(['confirm', 'close'])
 }
 
 .btn-confirm {
-  background: #e63946;
   color: white;
   border: none;
   padding: var(--space-2) var(--space-5);
@@ -138,8 +187,28 @@ defineEmits(['confirm', 'close'])
   transition: background-color 0.2s, transform 0.15s;
 }
 
-.btn-confirm:hover {
+.btn-primary {
+  background: var(--primary);
+}
+
+.btn-primary:hover {
+  background: #5032d6;
+}
+
+.btn-danger {
+  background: #e63946;
+}
+
+.btn-danger:hover {
   background: #d62828;
+}
+
+.btn-success {
+  background: #15803d;
+}
+
+.btn-success:hover {
+  background: #166534;
 }
 
 .btn-confirm:active {

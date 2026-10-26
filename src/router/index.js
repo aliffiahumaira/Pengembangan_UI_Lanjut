@@ -38,6 +38,27 @@ const routes = [
             component: () => import('@/views/EventDetail.vue'),
             meta: { breadcrumb: 'Event Detail' }
           },
+          // MODUL 5: RUTE FORMULIR PENDAFTARAN EVENT
+          {
+            path: 'events/:id/register',
+            name: 'event-registration',
+            component: () => import('@/views/EventRegistration.vue'),
+            meta: { breadcrumb: 'Event Registration' }
+          },
+          // MODUL 5: RUTE DOMPET TIKET PESERTA
+          {
+            path: 'your-events',
+            name: 'your-events',
+            component: () => import('@/views/YourEvents.vue'),
+            meta: { breadcrumb: 'Your Events' }
+          },
+          // MODUL 5: RUTE DETAIL TANDA TERIMA TIKET
+          {
+            path: 'your-events/:id',
+            name: 'ticket-receipt',
+            component: () => import('@/views/TicketReceipt.vue'),
+            meta: { breadcrumb: 'Ticket Receipt' }
+          },
           {
             path: 'category',
             name: 'category',
@@ -74,6 +95,10 @@ const routes = [
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
+  // Mengatur agar setiap perpindahan halaman otomatis kembali ke posisi paling atas
+  scrollBehavior() {
+    return { top: 0 }
+  },
   routes
 })
 

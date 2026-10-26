@@ -1,11 +1,18 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useEvents } from '@/composables/useEvents'
 
 const isScrolled = ref(false)
 const route = useRoute()
+const { userRegistrations, events } = useEvents()
 
-const menus = [
+// Hitung tiket aktif yang event-nya belum dihapus
+const activeTicketCount = computed(() => {
+  return userRegistrations.value.filter(r => events.value.some(e => e.id === r.eventId)).length
+})
+
+const menus = computed(() => [
   { name: 'Home', path: '/' },
   { name: 'About', path: '/about' },
   {
@@ -17,13 +24,18 @@ const menus = [
         path: '/browse/events',
         children: [{ name: 'Event Detail (Sample)', path: '/browse/events/1' }]
       },
+      // MODUL 5: Tambahkan menu Your Events dengan badge hitung tiket
+      { 
+        name: 'Your Events', 
+        path: '/browse/your-events',
+        badge: activeTicketCount.value 
+      },
       { name: 'Category', path: '/browse/category' }
-
     ]
   },
   { name: 'Contact', path: '/contact' },
   { name: 'Organizer Dashboard', path: '/dashboard' }
-]
+])
 
 const handleScroll = () => {
   isScrolled.value = window.scrollY > 10
@@ -65,7 +77,10 @@ onUnmounted(() => {
           <ul v-if="menu.children" class="dropdown-menu">
             <li v-for="child in menu.children" :key="child.name" class="dropdown-item">
               <router-link :to="child.path" class="dropdown-link">
-                {{ child.name }}
+                <span class="dropdown-item-text">
+                  {{ child.name }}
+                  <span v-if="child.badge && child.badge > 0" class="nav-badge">{{ child.badge }}</span>
+                </span>
                 <svg v-if="child.children" class="submenu-indicator" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="9 18 15 12 9 6"></polyline>
                 </svg>
@@ -206,8 +221,24 @@ onUnmounted(() => {
   transition: background-color 0.2s, color 0.2s;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
+.dropdown-item-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 .dropdown-link:hover { background-color: #c4c4c4; color: #000; }
 .dropdown-item:last-child .dropdown-link { border-bottom: none; }
+
+/* STYLE UNTUK BADGE TIKET DI DROPDOWN */
+.nav-badge {
+  background: var(--primary, #6644ff);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 50px;
+  line-height: 1;
+}
 
 .submenu {
   display: none;
