@@ -1,199 +1,278 @@
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch } from 'vue';
 
-const STORAGE_KEY_EVENTS = 'gatherly_events'
-const STORAGE_KEY_REGISTRATIONS = 'gatherly_user_registrations'
+const EVENTS_STORAGE_KEY = 'gatherly_events';
+const REGISTRATIONS_STORAGE_KEY = 'gatherly_user_registrations';
 
-// Sample default events jika localStorage masih kosong
-const defaultEvents = [
-  {
-    id: 1,
-    title: 'Vue.js 3 Masterclass: Building Scalable Apps',
-    cat: 'Workshop',
-    date: 'Oct 25, 2026 • 10:00 AM',
-    loc: 'Online (Zoom)',
-    quota: 45,
-    price: 'Free',
-    desc: 'Deep dive into Vue 3 Composition API, Pinia, and advanced architecture strategies for large-scale enterprise web applications.',
-    done: false
-  },
-  {
-    id: 2,
-    title: 'Design System & Component Library Summit',
-    cat: 'Seminar',
-    date: 'Nov 02, 2026 • 01:00 PM',
-    loc: 'Tech Center, Jakarta',
-    quota: 120,
-    price: 'Free',
-    desc: 'Learn how leading tech companies scale UI design systems and build accessible component libraries with Figma and Vue.',
-    done: false
-  },
-  {
-    id: 3,
-    title: 'Frontend Developer Meetup Jakarta 2026',
-    cat: 'Meetup',
-    date: 'Nov 15, 2026 • 06:30 PM',
-    loc: 'CoWorking Hub, Kuningan',
-    quota: 80,
-    price: 'Free',
-    desc: 'Network with local web developers, discuss the latest web standards, tools, and share real-world project experiences.',
-    done: false
-  }
-]
+const getApiBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  return envUrl ? envUrl.trim().replace(/\/+$/, '') : '';
+};
 
-// INITIALIZE STATE DARI LOCAL STORAGE
-const loadStoredEvents = () => {
-  const saved = localStorage.getItem(STORAGE_KEY_EVENTS)
-  return saved ? JSON.parse(saved) : defaultEvents
-}
+const savedData = localStorage.getItem(EVENTS_STORAGE_KEY);
+const events = ref(savedData ? JSON.parse(savedData) : []);
 
-const loadStoredRegistrations = () => {
-  const saved = localStorage.getItem(STORAGE_KEY_REGISTRATIONS)
-  return saved ? JSON.parse(saved) : []
-}
+const savedRegs = localStorage.getItem(REGISTRATIONS_STORAGE_KEY);
+const userRegistrations = ref(savedRegs ? JSON.parse(savedRegs) : []);
 
-const events = ref(loadStoredEvents())
-const userRegistrations = ref(loadStoredRegistrations())
+const loading = ref(false);
+const error = ref(null);
 
-// WATCHERS UNTUK MENSINKRONKAN DENGAN LOCAL STORAGE
 watch(
   events,
   (newEvents) => {
-    localStorage.setItem(STORAGE_KEY_EVENTS, JSON.stringify(newEvents))
+    localStorage.setItem(EVENTS_STORAGE_KEY, JSON.stringify(newEvents));
   },
   { deep: true }
-)
+);
 
 watch(
   userRegistrations,
   (newRegs) => {
-    localStorage.setItem(STORAGE_KEY_REGISTRATIONS, JSON.stringify(newRegs))
+    localStorage.setItem(REGISTRATIONS_STORAGE_KEY, JSON.stringify(newRegs));
   },
   { deep: true }
-)
+);
 
 export function useEvents() {
-  const totalEvents = computed(() => events.value.length)
-  const activeEvents = computed(() => events.value.filter((e) => !e.done))
-  const completedEvents = computed(() => events.value.filter((e) => e.done))
+  const totalEvents = computed(() => events.value.length);
+  const activeEvents = computed(() => events.value.filter((e) => !e.done));
+  const completedEvents = computed(() => events.value.filter((e) => e.done));
+  const totalRegistrations = computed(() => userRegistrations.value.length);
 
-  const createEvent = (eventData) => {
-    const newEvent = {
-      id: Date.now(),
-      title: eventData.title,
+  // 1. HTTP GET ALL EVENTS
+  const fetchEvents = async () => {
+    loading.value = true;
+    error.value = null;
+    const baseUrl = getApiBaseUrl();
+
+    if (!baseUrl || baseUrl.includes('67xxxxxx')) {
+      loading.value = false;
+      error.value = 'Alamat REST API belum dikonfigurasi. Silakan masukkan URL MockAPI Anda pada berkas .env.';
+      return;
+    }
+
+    try {
+      const response = await fetch(`${baseUrl}/events`);
+      if (!response.ok) {
+        throw new Error(`Gagal memuat data dari server (Status HTTP: ${response.status})`);
+      }
+      const data = await response.json();
+      events.value = Array.isArray(data) ? data : [];
+    } catch (err) {
+      error.value = err.message || 'Terjadi kegagalan jaringan saat menghubungi server API.';
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  // 2. HTTP GET EVENT BY ID
+  const fetchEventById = async (id) => {
+    if (!id) return null;
+    const strId = String(id);
+    const existing = events.value.find((e) => String(e.id) === strId);
+    if (existing) return existing;
+
+    const baseUrl = getApiBaseUrl();
+    if (!baseUrl || baseUrl.includes('67xxxxxx')) return null;
+
+    loading.value = true;
+    error.value = null;
+
+    try {
+      const response = await fetch(`${baseUrl}/events/${strId}`);
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error('Acara tidak ditemukan pada sistem server.');
+        }
+        throw new Error(`Gagal mengambil detail acara (Status HTTP: ${response.status})`);
+      }
+      const eventData = await response.json();
+      if (!events.value.some((e) => String(e.id) === String(eventData.id))) {
+        events.value.push(eventData);
+      }
+      return eventData;
+    } catch (err) {
+      error.value = err.message;
+      return null;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  // 3. HTTP POST CREATE EVENT
+  const createEvent = async (eventData) => {
+    loading.value = true;
+    error.value = null;
+    const cleanLoc = (eventData.loc || '').replace(/[\s]+/, ' ').trim();
+    const payload = {
+      title: eventData.title.trim(),
       date: eventData.date,
-      loc: eventData.loc,
+      loc: cleanLoc,
       cat: eventData.cat,
       quota: Number(eventData.quota) || 100,
       price: eventData.price || 'Free',
-      desc: eventData.desc,
+      desc: eventData.desc.trim(),
       done: false
-    }
-    events.value.unshift(newEvent)
-    return newEvent
-  }
+    };
 
-  const completeEvent = (id) => {
-    const target = events.value.find((e) => e.id === Number(id))
+    const baseUrl = getApiBaseUrl();
+    try {
+      if (baseUrl && !baseUrl.includes('67xxxxxx')) {
+        const response = await fetch(`${baseUrl}/events`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!response.ok) {
+          throw new Error(`Gagal menyimpan acara ke server (Status HTTP: ${response.status})`);
+        }
+        const createdEvent = await response.json();
+        events.value.unshift(createdEvent);
+        return createdEvent;
+      } else {
+        const localCreated = { ...payload, id: String(Date.now()) };
+        events.value.unshift(localCreated);
+        return localCreated;
+      }
+    } catch (err) {
+      error.value = err.message || 'Gagal menyimpan data ke server API';
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  // 4. HTTP DELETE EVENT
+  const deleteEvent = async (id) => {
+    const strId = String(id);
+    loading.value = true;
+    error.value = null;
+    const baseUrl = getApiBaseUrl();
+
+    try {
+      if (baseUrl && !baseUrl.includes('67xxxxxx')) {
+        const response = await fetch(`${baseUrl}/events/${strId}`, {
+          method: 'DELETE'
+        });
+        if (!response.ok && response.status !== 404) {
+          throw new Error(`Gagal menghapus acara dari server (Status HTTP: ${response.status})`);
+        }
+      }
+      events.value = events.value.filter((e) => String(e.id) !== strId);
+      userRegistrations.value = userRegistrations.value.filter((r) => String(r.eventId) !== strId);
+    } catch (err) {
+      error.value = err.message || 'Gagal menghapus acara dari server';
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  // 5. HTTP PUT COMPLETE EVENT
+  const completeEvent = async (id) => {
+    const strId = String(id);
+    const target = events.value.find((e) => String(e.id) === strId);
     if (target) {
-      target.done = true
-    }
-  }
-
-  // PEMBERSIHAN BERANTAI: HAPUS EVENT & PENDAFTARAN TERHUBUNG
-  const deleteEvent = (id) => {
-    const targetId = Number(id)
-    const index = events.value.findIndex((e) => e.id === targetId)
-    if (index !== -1) {
-      events.value.splice(index, 1)
-      // Hapus tiket registrasi peserta yang terhubung dengan event ini
-      userRegistrations.value = userRegistrations.value.filter(
-        (r) => r.eventId !== targetId
-      )
-    }
-  }
-
-  const getEventById = (id) => {
-    return events.value.find((e) => e.id === Number(id))
-  }
-
-  const clearAllEvents = () => {
-    events.value = []
-    userRegistrations.value = []
-    localStorage.removeItem(STORAGE_KEY_EVENTS)
-    localStorage.removeItem(STORAGE_KEY_REGISTRATIONS)
-  }
-
-  // ==================== MODUL 5: REGISTRATION LOGIC ====================
-
-  // CEK PASTI APABILA USER SUDAH TERDAFTAR DI EVENT TERSEBUT
-  const isUserRegistered = (eventId) => {
-    return userRegistrations.value.some((r) => r.eventId === Number(eventId))
-  }
-
-  // MENDAFTARKAN PESERTA KE EVENT
-  const registerAttendee = (eventId, formData) => {
-    const targetId = Number(eventId)
-    const ev = getEventById(targetId)
-
-    if (!ev || ev.quota <= 0 || isUserRegistered(targetId)) {
-      return null
-    }
-
-    // Kurangi kuota 1
-    ev.quota -= 1
-
-    // Generate kode unik pemesanan GTH-XXXX
-    const bookingCode = 'GTH-' + Math.floor(1000 + Math.random() * 9000)
-
-    const record = {
-      id: Date.now(),
-      eventId: ev.id,
-      eventTitle: ev.title,
-      eventCat: ev.cat,
-      eventDate: ev.date,
-      eventLoc: ev.loc,
-      bookingCode,
-      fullName: formData.fullName,
-      email: formData.email,
-      phone: formData.phone,
-      dob: formData.dob,
-      reason: formData.reason,
-      registeredAt: new Date().toISOString()
-    }
-
-    userRegistrations.value.unshift(record)
-    return record
-  }
-
-  // MEMBATALKAN REGISTRASI PESERTA
-  const cancelRegistration = (eventId) => {
-    const targetId = Number(eventId)
-    const regIndex = userRegistrations.value.findIndex(
-      (r) => r.eventId === targetId
-    )
-
-    if (regIndex !== -1) {
-      userRegistrations.value.splice(regIndex, 1)
-      const ev = getEventById(targetId)
-      if (ev) {
-        ev.quota += 1 // Kembalikan kuota seat
+      target.done = true;
+      const baseUrl = getApiBaseUrl();
+      if (baseUrl && !baseUrl.includes('67xxxxxx')) {
+        try {
+          await fetch(`${baseUrl}/events/${strId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ done: true })
+          });
+        } catch (err) {
+          console.warn('Gagal memperbarui status selesai di server:', err);
+        }
       }
     }
-  }
+  };
+
+  const getEventById = (id) => {
+    return events.value.find((e) => String(e.id) === String(id));
+  };
+
+  const registerAttendee = (eventId, participantData) => {
+    const strId = String(eventId);
+    const event = events.value.find((e) => String(e.id) === strId);
+    if (!event || event.quota <= 0) return null;
+
+    const bookingCode = 'GTH-' + Date.now().toString().slice(-4);
+    const regRecord = {
+      id: Date.now(),
+      eventId: strId,
+      eventTitle: event.title,
+      eventCat: event.cat,
+      eventDate: event.date,
+      eventLoc: event.loc,
+      bookingCode,
+      registeredAt: new Date().toISOString(),
+      fullName: participantData.fullName.trim(),
+      email: participantData.email.trim(),
+      phone: participantData.phone.trim(),
+      dob: participantData.dob,
+      reason: participantData.reason.trim()
+    };
+
+    event.quota = Math.max(0, event.quota - 1);
+    userRegistrations.value.unshift(regRecord);
+    return regRecord;
+  };
+
+  const isUserRegistered = (eventId) => {
+    const strId = String(eventId);
+    return userRegistrations.value.some((r) => String(r.eventId) === strId);
+  };
+
+  const getRegistrationByEventId = (eventId) => {
+    return userRegistrations.value.find((r) => String(r.eventId) === String(eventId));
+  };
+
+  const cancelRegistration = (eventId) => {
+    const strId = String(eventId);
+    const regIdx = userRegistrations.value.findIndex((r) => String(r.eventId) === strId);
+    if (regIdx !== -1) {
+      userRegistrations.value.splice(regIdx, 1);
+      const event = events.value.find((e) => String(e.id) === strId);
+      if (event) {
+        event.quota += 1;
+      }
+      return true;
+    }
+    return false;
+  };
+
+  const clearAllEvents = () => {
+    events.value = [];
+    localStorage.removeItem(EVENTS_STORAGE_KEY);
+  };
+
+  const clearAllRegistrations = () => {
+    userRegistrations.value = [];
+    localStorage.removeItem(REGISTRATIONS_STORAGE_KEY);
+  };
 
   return {
     events,
-    userRegistrations,
+    loading,
+    error,
     totalEvents,
     activeEvents,
     completedEvents,
+    userRegistrations,
+    totalRegistrations,
+    fetchEvents,
+    fetchEventById,
     createEvent,
-    completeEvent,
     deleteEvent,
+    completeEvent,
     getEventById,
-    clearAllEvents,
-    isUserRegistered,
     registerAttendee,
-    cancelRegistration
-  }
+    isUserRegistered,
+    getRegistrationByEventId,
+    cancelRegistration,
+    clearAllEvents,
+    clearAllRegistrations
+  };
 }
