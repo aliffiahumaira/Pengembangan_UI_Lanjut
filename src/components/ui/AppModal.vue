@@ -2,32 +2,32 @@
 defineProps({
   isOpen: {
     type: Boolean,
-    default: false
+    default: false,
   },
   title: {
     type: String,
-    default: 'Action Confirmation'
+    default: 'Action Confirmation',
   },
   message: {
     type: String,
-    default: 'Are you sure you want to proceed with this action?'
+    default: 'Are you sure you want to proceed with this action?',
   },
   badgeText: {
     type: String,
-    default: ''
+    default: '',
   },
   variant: {
     type: String,
-    default: 'primary' // Opsi: 'primary', 'danger', 'success'
+    default: 'primary', // Opsi: 'primary', 'danger', 'success'
   },
   confirmText: {
     type: String,
-    default: 'Yes, Proceed'
+    default: 'Yes, Proceed',
   },
   cancelText: {
     type: String,
-    default: 'Cancel'
-  }
+    default: 'Cancel',
+  },
 })
 
 defineEmits(['confirm', 'close'])
@@ -184,7 +184,9 @@ defineEmits(['confirm', 'close'])
   font-weight: 600;
   font-size: 0.95rem;
   cursor: pointer;
-  transition: background-color 0.2s, transform 0.15s;
+  transition:
+    background-color 0.2s,
+    transform 0.15s;
 }
 
 .btn-primary {

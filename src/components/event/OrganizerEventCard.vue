@@ -38,7 +38,7 @@ defineEmits(['view-detail', 'complete', 'delete']);
           View Details
         </button>
         <button class="btn-action btn-complete" @click="$emit('complete', event)">
-          ✔ Complete Event
+          Complete Event
         </button>
         <button class="btn-action btn-delete" @click="$emit('delete', event)">
           Delete
@@ -174,8 +174,8 @@ defineEmits(['view-detail', 'complete', 'delete']);
 
 .btn-delete {
   color: #e63946;
-  border-color: rgba(230, 57, 70, 0.3);
-  flex: 0 auto;
+  border-color: rgba(230, 57, 78, 0.3);
+  flex: 0 0 auto;
 }
 
 .btn-delete:hover {
